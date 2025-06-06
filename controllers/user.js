@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user";
 import { inngest } from "../inngest/client";
-import { error } from "console";
 
 export const signup = async (req, res) => {
   const { email, password, skills = [] } = req.body;
@@ -77,5 +76,34 @@ export const logout = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Logout failed", details: err.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  const { skills = [], role, email } = req.body;
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "User n=Not Found" });
+    }
+    await User.updateOne({ email: skills.length ? skills : user.skills, role });
+    return res.json({ message: "User updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Update Failed", details: error.message });
+  }
+};
+
+export const getUser = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const user = await User.find().select("-password");
+    return res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Update Failed", details: error.message });
   }
 };

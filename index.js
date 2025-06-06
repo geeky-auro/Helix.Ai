@@ -1,12 +1,18 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import dotenv from "dotenv";
+
+import userRoutes from "/routes/user";
+
+dotenv.config(); // 👈 This must be called BEFORE you use process.env
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
-console.log(process.env.MONGO_URI);
+
+app.use("/api/auth", userRoutes);
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
