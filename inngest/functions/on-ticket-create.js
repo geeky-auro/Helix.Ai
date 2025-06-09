@@ -1,13 +1,14 @@
 import { NonRetriableError } from "inngest";
-import Ticket from "../../models/ticket";
-import User from "../../models/user";
-import { inngest } from "../client";
-import { sendMail } from "../../utils/mailer";
-import analyzeTicket from "../../utils/ai";
+import Ticket from "../../models/ticket.js";
+import User from "../../models/user.js";
+import { inngest } from "../client.js";
+import { sendMail } from "../../utils/mailer.js";
+import analyzeTicket from "../../utils/ai.js";
 
 export const onTicketCreated = inngest.createFunction(
   {
     id: "on-ticket-created",
+    // Configure the number of times the function will be retried from 0 to 20. Default: 4
     retries: 2,
   },
   { event: "ticket/created" },
@@ -48,14 +49,40 @@ export const onTicketCreated = inngest.createFunction(
       const moderator = await step.run("assign-moderator", async () => {
         let user = await User.findOne({
           role: "moderator",
+          // We provide a role of moderator and with the help of regex we find
+          // whosever skill matches we grab them
           skills: {
             $eleMatch: {
               $regex: relatedSkills.join("|"),
+              //   "i" makes the regex case-insensitive, so it will match "react" or "ReAcT" as well.
               $options: "i",
             },
           },
         });
+        if (!user) {
+          user = await User.findOne({
+            role: "admin",
+          });
+        }
+        await Ticket.findByIdAndUpdate(ticket._id, {
+          assignedTo: user?._id || null,
+        });
+        return user;
       });
-    } catch (error) {}
+      // Trigger another pipeline and planning to send a email
+      await step.run("send-email-notification", async () => {
+        if (moderator) {
+          const finalTicket = await Ticket.findById(ticket._id);
+          await sendMail(
+            moderator.email,
+            "Ticket Assigned",
+            `A new ticket is assigned to you ${finalTicket.title}`
+          );
+        }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Error running steps: ", error);
+    }
   }
 );

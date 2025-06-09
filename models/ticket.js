@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ref } from "process";
 const ticketSchema = new mongoose.Schema({
   title: String,
   description: String,

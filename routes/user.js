@@ -5,15 +5,15 @@ import {
   logout,
   signup,
   updateUser,
-} from "../controllers/user";
-import { authenticate } from "../middlewares/auth";
+} from "../controllers/user.js";
+import { authenticate } from "../middlewares/auth.js";
 
-const router = express.Router();
+const userRoutes = express.Router();
 
-router.post("/authenticate", authenticate, updateUser);
-router.get("/users", authenticate, getUser);
+userRoutes.post("/authenticate", authenticate, updateUser);
+userRoutes.get("/users", authenticate, getUser);
 
-router.post("/signup", signup);
-router.post("/login", login);
-router.post("/logout", logout);
-export default router;
+userRoutes.post("/signup", signup);
+userRoutes.post("/login", login);
+userRoutes.post("/logout", logout);
+export default userRoutes;
